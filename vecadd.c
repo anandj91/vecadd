@@ -12,7 +12,7 @@
 int main(void) {
     // Create the two input vectors
     int i;
-    const int LIST_SIZE = 1024;
+    const int LIST_SIZE = 128;
     int *A = (int*)malloc(sizeof(int)*LIST_SIZE);
     int *B = (int*)malloc(sizeof(int)*LIST_SIZE);
     for(i = 0; i < LIST_SIZE; i++) {
@@ -79,9 +79,12 @@ int main(void) {
     ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&c_mem_obj);
  
     // Execute the OpenCL kernel on the list
-    size_t global_item_size = LIST_SIZE; // Process the entire lists
+    size_t global_work_offset = LIST_SIZE/2;
+    size_t global_item_size = LIST_SIZE/2; // Process the entire lists
     size_t local_item_size = 64; // Divide work items into groups of 64
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
+            &global_item_size, &local_item_size, 0, NULL, NULL);
+    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, &global_work_offset, 
             &global_item_size, &local_item_size, 0, NULL, NULL);
  
     // Read the memory buffer C on the device to the local variable C
@@ -95,10 +98,7 @@ int main(void) {
 
     // Display the result to the screen
     for(i = 0; i < LIST_SIZE; i++)
-        if (C[i] != A[i]+B[i]) {
-            fprintf(stderr, "FAILED\n");
-            break;
-        }
+        printf("C[%d] = %d\n", i, C[i]);
 
     ret = clReleaseKernel(kernel);
     ret = clReleaseProgram(program);
